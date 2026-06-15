@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LogicCraft — Автоматизация проектирования и генерации кода</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Интеграция фирменных шрифтов и фона из style.qss */
+    body {
+      font-family: "Inter", "Segoe UI", sans-serif;
+      background-color: #F0EFFE; /* Фоновый цвет приложения QMainWindow */
+      color: #1F1F1F; /* Основной цвет текста */
+    }
+    /* Легкая сетка для имитации холста QGraphicsScene */
+    .graphics-scene-bg {
+      background-image: radial-gradient(#D4C9F8 1px, transparent 0);
+      background-size: 20px 20px;
+    }
+    html {
+      scroll-behavior: smooth; /* Плавная прокрутка к блокам */
+    }
+  </style>
+</head>
+<body class="antialiased graphics-scene-bg">
+
+<header class="sticky top-0 z-50 bg-white border-b border-[#E5E0F8] shadow-sm">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 bg-gradient-to-b from-[#8B5CF6] to-[#7C3AED] rounded-lg flex items-center justify-center font-bold text-xl text-white shadow-md shadow-indigo-200">
+        СТ
+      </div>
+      <span class="font-bold text-2xl tracking-tight text-[#1F1F1F]">
+        СХЕМАТУС
+      </span>
+    </div>
+
+    <nav class="hidden md:flex space-x-2 text-base font-semibold">
+      <a href="#about" class="px-4 py-2 rounded-md text-[#1F1F1F] hover:bg-[#F3EEFF] hover:text-[#7C3AED] transition">О проекте</a>
+      <a href="#codegen-engine" class="px-4 py-2 rounded-md text-[#7C3AED] bg-[#F3EEFF] hover:bg-[#EDE9FE] transition">Кодогенерация</a>
+      <a href="#architecture" class="px-4 py-2 rounded-md text-[#1F1F1F] hover:bg-[#F3EEFF] hover:text-[#7C3AED] transition">Архитектура</a>
+      <a href="#team" class="px-4 py-2 rounded-md text-[#1F1F1F] hover:bg-[#F3EEFF] hover:text-[#7C3AED] transition">Команда</a>
+    </nav>
+
+    <div class="flex items-center">
+      <a id="header-download-btn" href="LogicCraft.exe" download class="download-btn-dynamic inline-flex items-center space-x-1.5 px-4 py-2 rounded-lg bg-[#7C3AED] text-white font-semibold text-sm hover:bg-[#6D28D9] transition shadow-sm">
+        <span class="platform-icon-slot">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+        </span>
+        <span class="platform-text-header">Скачать для Windows</span>
+      </a>
+    </div>
+
+  </div>
+</header>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const downloadBtn = document.getElementById("header-download-btn");
+    const btnText = downloadBtn.querySelector(".platform-text-header");
+    const iconSlot = downloadBtn.querySelector(".platform-icon-slot");
+
+    const userAgent = window.navigator.userAgent.toLowerCase();
+
+    // Проверяем, если пользователь зашел с macOS
+    if (userAgent.includes("mac")) {
+      downloadBtn.setAttribute("href", "LogicCraft_mac.zip"); // Имя файла для Mac, если планируешь добавить
+      btnText.textContent = "Скачать для macOS";
+
+      // Меняем иконку на яблоко (опционально)
+      iconSlot.innerHTML = `
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.21.67-2.93 1.49-.62.69-1.16 1.84-1.01 2.96 1.12.09 2.27-.58 2.95-1.39z"/>
+        </svg>
+      `;
+    }
+    // Если Linux
+    else if (userAgent.includes("linux")) {
+      downloadBtn.setAttribute("href", "LogicCraft_linux.tar.gz");
+      btnText.textContent = "Скачать для Linux";
+    }
+    // Для всех остальных (Windows по умолчанию)
+    else {
+      downloadBtn.setAttribute("href", "LogicCraft.exe");
+      btnText.textContent = "Скачать для Windows";
+    }
+  });
+</script>
+
+<section class="relative pt-20 pb-24 overflow-hidden lg:pt-28 lg:pb-32 bg-[#FAFAFE]">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <div class="grid lg:grid-cols-12 gap-12 items-center">
+
+      <div class="lg:col-span-5 space-y-8 text-center lg:text-left">
+        <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-[#7C3AED] leading-tight">
+          От UML-диаграммы <br>
+          <span class="text-[#1F1F1F]">к готовому коду</span>
+        </h1>
+        <p class="text-lg sm:text-xl text-[#6B7280] max-w-xl mx-auto lg:mx-0 leading-relaxed">
+          Кроссплатформенный инструмент, автоматизирующий процесс создания программного обеспечения от построения визуальных моделей до генерации структуры проекта на Python и Java.
+        </p>
+
+        <div class="flex flex-wrap justify-center lg:justify-start gap-4 pt-2">
+          <a href="#features" class="px-8 py-4 bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-base font-bold rounded-lg shadow-md shadow-indigo-200 transition text-center min-w-[160px]">
+            Возможности
+          </a>
+          <a href="#properties-view" class="px-8 py-4 bg-white hover:bg-[#F8F6FF] text-[#7C3AED] text-base font-bold rounded-lg border border-[#D4C9F8] transition text-center min-w-[160px]">
+            Панель свойств
+          </a>
+        </div>
+      </div>
+
+      <div class="lg:col-span-7">
+        <div class="bg-white rounded-xl border border-[#E5E0F8] p-1.5 shadow-2xl shadow-indigo-100/80 flex flex-col h-[580px]">
+
+          <div class="flex items-center justify-between px-4 py-2.5 border-b border-[#E5E0F8] bg-[#F8F6FF] rounded-t-lg select-none">
+            <div class="flex items-center space-x-2">
+              <div class="w-3 h-3 rounded-full bg-[#EF4444]/90"></div>
+              <div class="w-3 h-3 rounded-full bg-[#FFB020]/90"></div>
+              <div class="w-3 h-3 rounded-full bg-[#10B981]/90"></div>
+              <span class="text-xs font-mono text-[#6B7280] pl-2">logiccraft_runtime_canvas.ui</span>
+            </div>
+            <span class="text-xs font-bold text-[#7C3AED] font-mono tracking-wider bg-white px-2 py-0.5 rounded border border-[#D4C9F8]">QMainWindow</span>
+          </div>
+
+          <div class="bg-white px-3 py-1.5 border-b border-[#E5E0F8] flex items-center justify-between text-xs select-none">
+            <div class="flex items-center space-x-1">
+              <button class="p-1.5 text-slate-700 hover:bg-[#F3EEFF] hover:text-[#7C3AED] rounded transition" title="Создать новый класс">
+                <span class="font-bold">⬡ +Класс</span>
+              </button>
+              <div class="w-[1px] h-4 bg-[#E5E0F8] mx-1"></div>
+              <button class="p-1.5 text-slate-400 cursor-not-allowed" disabled title="Undo (Отменить)">↶</button>
+              <button class="p-1.5 text-slate-400 cursor-not-allowed" disabled title="Redo (Повторить)">↷</button>
+              <div class="w-[1px] h-4 bg-[#E5E0F8] mx-1"></div>
+              <span class="text-[11px] text-slate-400 font-mono" id="sim-live-indicator">Сигнал: ожидание изменений</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-mono font-medium" id="sim-signal-badge" style="display: none;">Properties Timer Active</span>
+            </div>
+          </div>
+
+          <div class="flex flex-grow overflow-hidden bg-[#F0EFFE] relative">
+
+            <div class="w-16 bg-white border-r border-[#E5E0F8] flex flex-col items-center py-3 space-y-3 select-none text-[10px] text-slate-500 font-medium">
+              <div class="p-2 bg-[#F3EEFF] text-[#7C3AED] rounded-lg border border-[#D4C9F8] cursor-pointer flex flex-col items-center" title="Инструмент выделения">
+                <span>🖱️</span>
+              </div>
+              <div class="p-2 hover:bg-slate-50 rounded-lg cursor-pointer flex flex-col items-center" title="Добавить связь наследования">
+                <span>▲</span>
+              </div>
+              <div class="p-2 hover:bg-slate-50 rounded-lg cursor-pointer flex flex-col items-center" title="Добавить ассоциацию">
+                <span>➔</span>
+              </div>
+            </div>
+
+            <div class="flex-grow p-4 relative overflow-hidden bg-[#F0EFFE] select-none" id="sim-canvas">
+
+              <div id="card-payment" onclick="selectSimCard('payment')" class="absolute top-6 left-6 w-44 bg-white rounded-xl shadow-md border-2 border-[#7C3AED] transition-all cursor-pointer overflow-hidden z-10">
+                <div class="bg-[#7C3AED] px-3 py-1.5 text-white font-bold text-[11px] font-mono flex items-center justify-between">
+                  <span id="label-payment-name">PaymentService</span>
+                  <span class="text-[9px] opacity-75">class</span>
+                </div>
+                <div class="p-2 space-y-2 font-mono text-[9px] text-slate-700 bg-white">
+                  <div id="box-payment-attrs" class="space-y-0.5 border-b border-[#E5E0F8] pb-1.5">
+                    <div>+ api_key: str</div>
+                    <div>+ balance: float</div>
+                  </div>
+                  <div id="box-payment-methods" class="space-y-0.5">
+                    <div>+ process(): bool</div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="card-order" onclick="selectSimCard('order')" class="absolute top-36 left-28 w-44 bg-white rounded-xl shadow-sm border border-[#E5E0F8] hover:border-[#C4B5FD] transition-all cursor-pointer overflow-hidden z-0">
+                <div class="bg-slate-700 px-3 py-1.5 text-white font-bold text-[11px] font-mono flex items-center justify-between id-header">
+                  <span id="label-order-name">OrderModel</span>
+                  <span class="text-[9px] opacity-75">class</span>
+                </div>
+                <div class="p-2 space-y-2 font-mono text-[9px] text-slate-700 bg-white">
+                  <div id="box-order-attrs" class="space-y-0.5 border-b border-[#E5E0F8] pb-1.5">
+                    <div>+ order_id: int</div>
+                    <div>+ amount: float</div>
+                  </div>
+                  <div id="box-order-methods" class="space-y-0.5">
+                    <div>+ save_to_db(): void</div>
+                  </div>
+                </div>
+              </div>
+
+              <svg class="absolute inset-0 w-full h-full pointer-events-none">
+                <path d="M 200 65 Q 260 90 240 144" fill="none" stroke="#9B72F5" stroke-width="2" stroke-dasharray="4,4"/>
+              </svg>
+            </div>
+
+            <div class="w-[200px] bg-white border-l border-[#E5E0F8] flex flex-col text-xs font-sans">
+              <div class="px-3 py-2 bg-slate-50 border-b border-[#E5E0F8] font-bold text-[#1F1F1F]">Свойства</div>
+
+              <div class="p-2.5 flex-grow overflow-y-auto space-y-3.5 bg-[#FAFAFE]" id="sim-properties-panel">
+                <div class="space-y-1">
+                  <label class="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider">Имя элемента</label>
+                  <input type="text" id="prop-input-name" oninput="handlePropNameChange(this.value)" class="w-full bg-white border border-[#D4C9F8] rounded px-2 py-1 text-xs font-mono focus:outline-none focus:border-[#7C3AED]">
+                </div>
+
+                <div class="space-y-1">
+                  <label class="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block">Атрибуты</label>
+                  <div class="border border-[#E5E0F8] bg-white rounded max-h-24 overflow-y-auto p-1 font-mono text-[10px] space-y-0.5" id="prop-list-attrs">
+                  </div>
+                  <div class="grid grid-cols-2 gap-1 pt-0.5">
+                    <button onclick="addPropertyItem('attr')" class="bg-white border border-[#C4B5FD] text-[#7C3AED] font-medium py-0.5 rounded hover:bg-[#F3EEFF] text-[9px]">+ Добавить</button>
+                    <button onclick="removePropertyItem('attr')" class="bg-white border border-red-200 text-red-500 font-medium py-0.5 rounded hover:bg-red-50 text-[9px]">Удалить</button>
+                  </div>
+                </div>
+
+                <div class="space-y-1">
+                  <label class="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block">Методы</label>
+                  <div class="border border-[#E5E0F8] bg-white rounded max-h-24 overflow-y-auto p-1 font-mono text-[10px] space-y-0.5" id="prop-list-methods">
+                  </div>
+                  <div class="grid grid-cols-2 gap-1 pt-0.5">
+                    <button onclick="addPropertyItem('method')" class="bg-white border border-[#C4B5FD] text-[#7C3AED] font-medium py-0.5 rounded hover:bg-[#F3EEFF] text-[9px]">+ Добавить</button>
+                    <button onclick="removePropertyItem('method')" class="bg-white border border-red-200 text-red-500 font-medium py-0.5 rounded hover:bg-red-50 text-[9px]">Удалить</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="bg-slate-900 h-32 border-t border-slate-800 flex flex-col text-xs font-mono text-slate-300">
+            <div class="bg-slate-950 px-3 py-1.5 flex items-center justify-between border-b border-slate-800 text-[11px] text-slate-400 select-none">
+              <span>Live Code Generator Output (Jinja2 Rendered)</span>
+              <div class="flex space-x-2">
+                <button onclick="setSimLang('python')" id="lang-btn-python" class="px-2 py-0.5 text-[#10B981] bg-[#10B981]/10 rounded font-bold">Python</button>
+                <button onclick="setSimLang('java')" id="lang-btn-java" class="px-2 py-0.5 text-slate-500 hover:text-white rounded">Java</button>
+              </div>
+            </div>
+            <div class="p-3 overflow-y-auto flex-grow text-[11px] bg-slate-900 leading-normal" id="sim-code-output">
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<script>
+  // Наше реактивное состояние для симулятора диаграмм
+  const diagramState = {
+    selected: 'payment',
+    language: 'python',
+    payment: {
+      name: 'PaymentService',
+      attrs: ['+ api_key: str', '+ balance: float'],
+      methods: ['+ process(): bool']
+    },
+    order: {
+      name: 'OrderModel',
+      attrs: ['+ order_id: int', '+ amount: float'],
+      methods: ['+ save_to_db(): void']
+    }
+  };
+
+  let pyDebounceTimer = null;
+
+  // Инициализация
+  window.addEventListener('DOMContentLoaded', () => {
+    syncUI();
+  });
+
+  function selectSimCard(cardId) {
+    diagramState.selected = cardId;
+
+    // Сброс и применение стилей рамок (как в theme.py)
+    document.getElementById('card-payment').className = `absolute top-6 left-6 w-44 bg-white rounded-xl shadow-md border transition-all cursor-pointer overflow-hidden ${cardId === 'payment' ? 'border-2 border-[#7C3AED] z-10' : 'border-[#E5E0F8] z-0'}`;
+    document.getElementById('card-order').className = `absolute top-36 left-28 w-44 bg-white rounded-xl shadow-sm border transition-all cursor-pointer overflow-hidden ${cardId === 'order' ? 'border-2 border-[#7C3AED] z-10' : 'border-[#E5E0F8] z-0'}`;
+
+    syncUI();
+  }
+
+  function syncUI() {
+    const cardData = diagramState[diagramState.selected];
+
+    // Заполняем поля ввода панели свойств
+    document.getElementById('prop-input-name').value = cardData.name;
+
+    // Рендерим списки свойств в PropertiesPanel
+    renderList('prop-list-attrs', cardData.attrs);
+    renderList('prop-list-methods', cardData.methods);
+
+    // Рендерим Live Code
+    renderLiveCode();
+  }
+
+  function renderList(elementId, items) {
+    const container = document.getElementById(elementId);
+    container.innerHTML = '';
+    items.forEach((item, index) => {
+      const div = document.createElement('div');
+      div.className = "px-1.5 py-0.5 bg-[#F3EEFF] text-[#7C3AED] rounded text-[10px] truncate";
+      div.textContent = item;
+      container.appendChild(div);
+    });
+  }
+
+  // Логика работы PropertiesPanel Debounce таймера (500 мс)
+  function handlePropNameChange(newName) {
+    const activeCard = diagramState.selected;
+    const indicator = document.getElementById('sim-live-indicator');
+    const badge = document.getElementById('sim-signal-badge');
+
+    // Мгновенно обновляем текст прямо на карточке диаграммы (визуальный фидбек)
+    document.getElementById(`label-${activeCard}-name`).textContent = newName;
+    diagramState[activeCard].name = newName;
+
+    // Включаем статус ожидания дебаунса (как в PyQt6)
+    indicator.textContent = "PropertiesPanel: ввод текста... (таймер запущен)";
+    indicator.className = "text-[11px] text-amber-500 font-mono animate-pulse";
+    badge.style.display = 'inline-block';
+
+    clearTimeout(pyDebounceTimer);
+
+    pyDebounceTimer = setTimeout(() => {
+      // Имитируем падение сигнала timeout в слот контроллера и пуш в историю
+      indicator.textContent = `emit name_changed.emit("${activeCard}", "${newName}") -> Снимок записан`;
+      indicator.className = "text-[11px] text-green-600 font-mono font-bold";
+      badge.style.display = 'none';
+
+      // Перерендериваем код
+      renderLiveCode();
+    }, 500);
+  }
+
+  function addPropertyItem(type) {
+    const activeCard = diagramState.selected;
+    const promptMsg = type === 'attr' ? 'Введите имя атрибута (+ name: str):' : 'Введите имя метода (+ action(): void):';
+    const defVal = type === 'attr' ? '+ status: int' : '+ rollback(): void';
+
+    const input = prompt(promptMsg, defVal);
+    if(input) {
+      if(type === 'attr') {
+        diagramState[activeCard].attrs.push(input);
+        // Синхронизируем мини-карточку на холсте
+        const div = document.createElement('div');
+        div.textContent = input;
+        document.getElementById(`box-${activeCard}-attrs`).appendChild(div);
+      } else {
+        diagramState[activeCard].methods.push(input);
+        const div = document.createElement('div');
+        div.textContent = input;
+        document.getElementById(`box-${activeCard}-methods`).appendChild(div);
+      }
+      syncUI();
+      logInstantSignal(`${type}s_changed.emit()`);
+    }
+  }
+
+  function removePropertyItem(type) {
+    const activeCard = diagramState.selected;
+    const targetArray = type === 'attr' ? diagramState[activeCard].attrs : diagramState[activeCard].methods;
+
+    if(targetArray.length > 0) {
+      targetArray.pop();
+      syncUI();
+
+      // Синхронизируем карточку на холсте
+      const boxId = type === 'attr' ? `box-${activeCard}-attrs` : `box-${activeCard}-methods`;
+      const box = document.getElementById(boxId);
+      if(box.lastElementChild) box.removeChild(box.lastElementChild);
+
+      logInstantSignal(`${type}s_changed.emit() -> элемент удален`);
+    }
+  }
+
+  function logInstantSignal(msg) {
+    const indicator = document.getElementById('sim-live-indicator');
+    indicator.textContent = `Мгновенный сигнал: ${msg}`;
+    indicator.className = "text-[11px] text-[#7C3AED] font-mono font-bold";
+  }
+
+  function setSimLang(lang) {
+    diagramState.language = lang;
+    document.getElementById('lang-btn-python').className = lang === 'python' ? 'px-2 py-0.5 text-[#10B981] bg-[#10B981]/10 rounded font-bold' : 'px-2 py-0.5 text-slate-500 hover:text-white';
+    document.getElementById('lang-btn-java').className = lang === 'java' ? 'px-2 py-0.5 text-amber-400 bg-amber-400/10 rounded font-bold' : 'px-2 py-0.5 text-slate-500 hover:text-white';
+    renderLiveCode();
+  }
+
+  // Динамический эмулятор Jinja2 генератора
+  function renderLiveCode() {
+    const activeData = diagramState[diagramState.selected];
+    const out = document.getElementById('sim-code-output');
+
+    if(diagramState.language === 'python') {
+      let attrsStr = activeData.attrs.map(a => `        self._${a.replace('+','').trim().split(':')[0]} = None`).join('\n');
+      let methodsStr = activeData.methods.map(m => `    def ${m.replace('+','').trim().split('(')[0].trim()}(self) -> None:\n        pass`).join('\n\n');
+
+      out.innerHTML = `<pre class="text-emerald-400"><span class="text-blue-400">class</span> <span class="text-yellow-400">${activeData.name}</span>:
+    <span class="text-slate-500">"""Generated via LogicCraft CodeEngine"""</span>
+    <span class="text-blue-400">def</span> <span class="text-cyan-400">__init__</span>(<span class="text-orange-400">self</span>):
+${attrsStr || '        pass'}
+
+${methodsStr || '    # No methods defined'}</pre>`;
+    } else {
+      // Java Рендер
+      let attrsStr = activeData.attrs.map(a => `    public ${a.includes('str')?'String':a.includes('int')?'int':'double'} ${a.replace('+','').trim().split(':')[0]};`).join('\n');
+      let methodsStr = activeData.methods.map(m => `    public void ${m.replace('+','').trim().split('(')[0].trim()}() {\n        // TODO: Auto-generated code\n    }`).join('\n\n');
+
+      out.innerHTML = `<pre class="text-amber-300"><span class="text-blue-400">public class</span> <span class="text-yellow-400">${activeData.name}</span> {
+
+${attrsStr || '    // No attributes'}
+
+    <span class="text-blue-400">public</span> <span class="text-cyan-400">${activeData.name}</span>() {
+    }
+
+${methodsStr || '    // No methods'}
+}</pre>`;
+    }
+  }
+</script>
+
+
+
+<section id="about" class="py-24 bg-white border-y border-[#E5E0F8] relative">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <div class="grid lg:grid-cols-12 gap-12 items-center mb-20">
+      <div class="lg:col-span-7 space-y-4">
+        <span class="text-sm font-bold font-mono text-[#7C3AED] uppercase tracking-wider bg-[#F3EEFF] px-4 py-1.5 rounded-full border border-[#D4C9F8]">
+          Young Dev Team Presentation
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-bold text-[#1F1F1F]">Здравствуйте, уважаемые эксперты!</h2>
+        <p class="text-base sm:text-lg text-[#6B7280] leading-relaxed">
+          Мы — молодая команда разработчиков, которая хочет представить вам свой проект.
+          Мы много раз сталкивались с тем, что UML-диаграммы живут своей жизнью, а исходный код — своей.
+          И мы решили это исправить. Так родился <strong>СХЕМАТУС</strong>.
+        </p>
+      </div>
+      <div class="lg:col-span-5 bg-[#FAFAFE] border border-[#E5E0F8] p-6 rounded-2xl shadow-inner">
+        <div class="flex items-center space-x-3 text-[#7C3AED] mb-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          <span class="text-xs font-bold uppercase tracking-wider font-mono">Статус продукта</span>
+        </div>
+        <p class="text-sm text-[#6B7280] leading-relaxed">
+          Все ключевые функции полностью реализованы и протестированы. Продукт прошел внутренний аудит качества архитектуры и на 100% готов к пилотному выпуску.
+        </p>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-8 mb-20">
+      <div class="bg-red-50/40 border border-red-100 p-8 rounded-2xl space-y-3">
+        <div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center text-red-600 font-bold text-sm">!</div>
+        <h3 class="text-lg font-bold text-[#1F1F1F]">Актуальность и проблема</h3>
+        <p class="text-sm text-[#6B7280] leading-relaxed">
+          Сегодня существует огромный разрыв между проектированием и разработкой. Архитектор рисует красивую диаграмму, а программист затем вручную пишет десятки классов — поля, методы, связи. Диаграмма остается лишь в документации и мгновенно устаревает, а рутина отнимает часы работы и ведет к архитектурным ошибкам.
+        </p>
+      </div>
+
+      <div class="bg-gradient-to-br from-[#8B5CF6] to-[#7C3AED] p-8 rounded-2xl text-white shadow-xl shadow-indigo-100 space-y-3">
+        <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white font-bold text-sm">✓</div>
+        <h3 class="text-lg font-bold text-white">Наше решение — СХЕМАТУС</h3>
+        <p class="text-sm text-indigo-100 leading-relaxed">
+          Это инструмент для сквозного визуального проектирования архитектуры. Вы создаете UML-диаграмму классов на интерактивном холсте, а приложение автоматически генерирует чистый, структурированный код на выбранных языках программирования, исключая ручной труд.
+        </p>
+      </div>
+    </div>
+
+    <div class="mb-20">
+      <h3 class="text-xl font-bold text-[#1F1F1F] mb-8 text-center md:text-left">Функциональные возможности</h3>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="border border-[#E5E0F8] bg-[#FAFAFE] p-6 rounded-xl hover:bg-white hover:shadow-md transition duration-200">
+          <div class="text-[#7C3AED] font-mono text-xs font-bold uppercase tracking-wider mb-2">01. CodeGen</div>
+          <h4 class="font-bold text-[#1F1F1F] mb-1.5 text-sm">Авто-генерация кода</h4>
+          <p class="text-xs text-[#6B7280] leading-relaxed">Мгновенная сборка структуры ООП-классов из визуальной UML-модели диаграммы.</p>
+        </div>
+        <div class="border border-[#E5E0F8] bg-[#FAFAFE] p-6 rounded-xl hover:bg-white hover:shadow-md transition duration-200">
+          <div class="text-[#7C3AED] font-mono text-xs font-bold uppercase tracking-wider mb-2">02. Validation</div>
+          <h4 class="font-bold text-[#1F1F1F] mb-1.5 text-sm">Верификация связей</h4>
+          <p class="text-xs text-[#6B7280] leading-relaxed">Строгая проверка типов данных, направлений ассоциаций и целостности графа.</p>
+        </div>
+        <div class="border border-[#E5E0F8] bg-[#FAFAFE] p-6 rounded-xl hover:bg-white hover:shadow-md transition duration-200">
+          <div class="text-[#7C3AED] font-mono text-xs font-bold uppercase tracking-wider mb-2">03. Serialization</div>
+          <h4 class="font-bold text-[#1F1F1F] mb-1.5 text-sm">Сохранение в JSON</h4>
+          <p class="text-xs text-[#6B7280] leading-relaxed">Быстрый экспорт и импорт всего проекта без потери метаданных элементов.</p>
+        </div>
+        <div class="border border-[#E5E0F8] bg-[#FAFAFE] p-6 rounded-xl hover:bg-white hover:shadow-md transition duration-200">
+          <div class="text-[#7C3AED] font-mono text-xs font-bold uppercase tracking-wider mb-2">04. UX Shortcuts</div>
+          <h4 class="font-bold text-[#1F1F1F] mb-1.5 text-sm">Горячие клавиши</h4>
+          <p class="text-xs text-[#6B7280] leading-relaxed">Удобное и быстрое управление холстом с помощью оптимизированных комбинаций клавиш.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid lg:grid-cols-12 gap-8 items-center bg-[#FAFAFE] border border-[#E5E0F8] rounded-2xl p-8 lg:p-12 mb-20">
+      <div class="lg:col-span-6 space-y-4">
+        <span class="text-xs font-bold font-mono text-[#7C3AED] uppercase tracking-wider block">UI/UX Architecture Под капотом</span>
+        <h3 class="text-2xl font-bold text-[#1F1F1F]">Интеллектуальная панель свойств</h3>
+        <p class="text-sm text-[#6B7280] leading-relaxed">
+          Правая панель свойств строго разделена на эргономичные зоны: <strong>имя, тип, атрибуты, методы</strong> и кнопка удаления. При клике на любую карточку класса на холсте панель мгновенно перестраивается и отображает её актуальные данные.
+        </p>
+        <p class="text-sm text-[#6B7280] leading-relaxed">
+          Внутри это изолированный класс <code>PropertiesPanel</code> на базе слоя <code>QVBoxLayout</code>, оперирующий компонентами <code>QLineEdit</code>, <code>QComboBox</code> и <code>QListWidget</code>. Панель <strong>не хранит состояние внутри себя</strong> — она выступает чистым View и только транслирует сигналы изменений в центральный контроллер.
+        </p>
+      </div>
+
+      <div class="lg:col-span-6 bg-white border border-[#E5E0F8] p-6 rounded-xl shadow-sm relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-24 h-24 bg-[#F3EEFF] rounded-bl-full -z-0 pointer-events-none"></div>
+        <div class="relative z-10 space-y-3">
+          <div class="inline-flex items-center space-x-2 px-2.5 py-1 rounded bg-[#F3EEFF] text-[#7C3AED] font-mono text-xs font-bold">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>Наша Фишечка — Debounce</span>
+          </div>
+          <h4 class="text-lg font-bold text-[#1F1F1F]">QTimer на 500 миллисекунд</h4>
+          <p class="text-xs sm:text-sm text-[#6B7280] leading-relaxed">
+            Панель свойств не дергает движок на каждый ввод символа. Она дожидается логической паузы пользователя в 500 мс с помощью механизма <strong>Debounce</strong>.
+          </p>
+          <div class="text-xs text-[#7C3AED] font-mono bg-[#FAFAFE] p-3 rounded border border-[#E5E0F8]">
+            ✓ Снижает вычислительную нагрузку на GUI поток<br>
+            ✓ Исключает мусорные состояния из истории Undo/Redo
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t border-[#E5E0F8] pt-12 grid md:grid-cols-12 gap-8 items-start">
+      <div class="md:col-span-4">
+        <h4 class="text-xs font-bold font-mono text-[#6B7280] uppercase tracking-wider mb-2">Целевая аудитория</h4>
+        <p class="text-sm font-bold text-[#1F1F1F] leading-relaxed">
+          Студенты и разработчики, которые устали от рутины ручного маппинга и хотят, чтобы документация всегда соответствовала коду.
+        </p>
+      </div>
+      <div class="md:col-span-8 border-l-0 md:border-l md:border-[#E5E0F8] md:pl-8 space-y-3">
+        <h4 class="text-xs font-bold font-mono text-[#7C3AED] uppercase tracking-wider">Заключение команды</h4>
+        <p class="text-sm text-[#6B7280] leading-relaxed">
+          Работа над <strong>СХЕМАТУС</strong> показала, что даже такую сложную задачу, как создание собственного UML-редактора с автоматической генерацией кода, можно решить в короткие сроки, если правильно распределить роли в команде. Мы не просто написали программу, мы создали инструмент, способный избавить программистов от повседневной рутины.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section id="properties-view" class="py-24 bg-white border-t border-[#E5E0F8] relative overflow-hidden">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <div class="grid lg:grid-cols-12 gap-8 items-end mb-16">
+      <div class="lg:col-span-8 space-y-3">
+        <span class="text-sm font-bold font-mono text-[#7C3AED] uppercase tracking-wider bg-[#F3EEFF] px-4 py-1.5 rounded-full border border-[#D4C9F8]">
+          View Layer / PyQt6 Component
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-bold text-[#1F1F1F]">Анатомия PropertiesPanel</h2>
+        <p class="text-base text-[#6B7280]">
+          Визуализация правой панели свойств на базе <code>QVBoxLayout</code>. Компоненты выступают в роли чистого View: они не хранят состояние, а транслируют изменения в контроллер через сигналы с использованием задержки (Debounce).
+        </p>
+      </div>
+      <div class="lg:col-span-4 lg:text-right">
+        <div class="inline-flex p-1 bg-[#F3EEFF] border border-[#D4C9F8] rounded-xl font-mono text-xs text-[#7C3AED] font-bold">
+          <span class="px-3 py-1.5 bg-white rounded-lg shadow-sm">Width: 220px</span>
+          <span class="px-3 py-1.5">Debounce: 500ms</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid lg:grid-cols-12 gap-8 items-stretch">
+
+      <div class="lg:col-span-4 bg-[#F0EFFE] p-4 rounded-2xl border border-[#D4C9F8] shadow-sm flex flex-col items-center">
+        <div class="w-full text-center mb-3 select-none">
+          <span class="text-[10px] font-bold font-mono text-[#7C3AED]/70 uppercase tracking-widest">PyQt6 Render Area</span>
+        </div>
+
+        <div class="w-[220px] bg-[#F0EFFE] font-sans text-[#1F1F1F] text-xs flex flex-col border border-[#C4B5FD] rounded shadow-lg overflow-hidden bg-white">
+
+          <div class="bg-white px-3 py-2.5 font-bold border-b border-[#E5E0F8] text-[#1F1F1F] flex items-center justify-between">
+            <span>Свойства</span>
+            <span class="text-[9px] font-mono bg-[#F3EEFF] text-[#7C3AED] px-1.5 py-0.5 rounded">QWidget</span>
+          </div>
+
+          <div class="p-3 space-y-4 flex-grow bg-[#FAFAFE]">
+
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block">Имя</label>
+              <div class="relative">
+                <input type="text" id="sim-input-name" value="UserClass" oninput="triggerSimDebounce(this.value)" class="w-full bg-white border border-[#C4B5FD] rounded px-2 py-1.5 text-xs text-[#1F1F1F] focus:outline-none focus:border-[#7C3AED] focus:ring-1 focus:ring-[#7C3AED] transition font-mono">
+                <div id="debounce-indicator" class="absolute right-2 top-2.5 w-2 h-2 rounded-full bg-green-500 transition-colors duration-200"></div>
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block">Атрибуты</label>
+              <div class="border border-[#E5E0F8] bg-white rounded h-24 overflow-y-auto p-1 font-mono text-[11px] space-y-0.5" id="sim-attrs-list">
+                <div class="px-1.5 py-1 bg-[#F3EEFF] text-[#7C3AED] rounded text-[10px] truncate">+ id: str</div>
+                <div class="px-1.5 py-1 bg-[#F3EEFF] text-[#7C3AED] rounded text-[10px] truncate">+ name: str</div>
+              </div>
+              <div class="grid grid-cols-2 gap-1 pt-1">
+                <button onclick="addSimItem('attr')" class="bg-white border border-[#C4B5FD] text-[#7C3AED] font-medium py-1 px-2 rounded hover:bg-[#F3EEFF] transition text-[10px]">+ Добавить</button>
+                <button onclick="removeSimItem('attr')" class="bg-white border border-red-200 text-red-500 font-medium py-1 px-2 rounded hover:bg-red-50 transition text-[10px]">Удалить</button>
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <label class="text-[10px] font-bold text-[#6B7280] uppercase tracking-wider block">Методы</label>
+              <div class="border border-[#E5E0F8] bg-white rounded h-24 overflow-y-auto p-1 font-mono text-[11px] space-y-0.5" id="sim-methods-list">
+                <div class="px-1.5 py-1 bg-[#F3EEFF] text-[#7C3AED] rounded text-[10px] truncate">+ save(): void</div>
+              </div>
+              <div class="grid grid-cols-2 gap-1 pt-1">
+                <button onclick="addSimItem('method')" class="bg-white border border-[#C4B5FD] text-[#7C3AED] font-medium py-1 px-2 rounded hover:bg-[#F3EEFF] transition text-[10px]">+ Добавить</button>
+                <button onclick="removeSimItem('method')" class="bg-white border border-red-200 text-red-500 font-medium py-1 px-2 rounded hover:bg-red-50 transition text-[10px]">Удалить</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-8 bg-[#151515] rounded-2xl border border-slate-800 shadow-xl overflow-hidden flex flex-col h-[460px]">
+
+        <div class="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800 text-white select-none">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#EF4444]"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-[#F59E0B]"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-[#10B981]"></span>
+            <span class="text-xs text-slate-400 font-mono pl-2">views/properties_panel.py</span>
+          </div>
+          <div class="flex items-center space-x-3">
+            <span id="terminal-pulse" class="text-[10px] font-mono text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-500/20 opacity-0 transition-opacity duration-200">SIGNAL EMITTED</span>
+            <div class="text-xs font-mono text-slate-500">PyQt6 Controller Link</div>
+          </div>
+        </div>
+
+        <div class="relative flex-grow p-6 font-mono text-xs overflow-y-auto text-slate-300 leading-relaxed bg-[#151515] selection:bg-[#7C3AED]/30">
+          <pre class="text-[11px] sm:text-xs"><span class="text-blue-400">class</span> <span class="text-yellow-400">PropertiesPanel</span>(<span class="text-green-400">QWidget</span>):
+    <span class="text-slate-500"># Сигналы для отправки изменений в контроллер</span>
+    name_changed = <span class="text-blue-400">pyqtSignal</span>(<span class="text-cyan-400">str</span>, <span class="text-cyan-400">str</span>)        <span class="text-slate-500"># card_id, new_name</span>
+    attributes_changed = <span class="text-blue-400">pyqtSignal</span>(<span class="text-cyan-400">str</span>, <span class="text-cyan-400">list</span>) <span class="text-slate-500"># card_id, attributes</span>
+    methods_changed = <span class="text-blue-400">pyqtSignal</span>(<span class="text-cyan-400">str</span>, <span class="text-cyan-400">list</span>)    <span class="text-slate-500"># card_id, methods</span>
+
+    <span class="text-blue-400">def</span> <span class="text-cyan-400">__init__</span>(<span class="text-orange-400">self</span>, parent=<span class="text-orange-400">None</span>):
+        <span class="text-cyan-400">super</span>().__init__(parent)
+
+        <span class="text-slate-500"># Поля для редактирования</span>
+        <span class="text-orange-400">self</span>.name_edit = <span class="text-blue-400">QLineEdit</span>()
+        <span class="text-orange-400">self</span>.attrs_list = <span class="text-blue-400">QListWidget</span>()
+        <span class="text-orange-400">self</span>.methods_list = <span class="text-blue-400">QListWidget</span>()
+
+        <span class="text-slate-500"># Таймер для задержки (Debounce)</span>
+        <span class="text-orange-400">self</span>._name_timer = <span class="text-blue-400">QTimer</span>()
+        <span class="text-orange-400">self</span>._name_timer.setSingleShot(<span class="text-orange-400">True</span>)
+        <span class="text-orange-400">self</span>._name_timer.timeout.connect(<span class="text-orange-400">self</span>._emit_name_changed)
+
+        <span class="text-slate-500"># Подключаем сигналы</span>
+        <span class="text-orange-400">self</span>.name_edit.textChanged.connect(<span class="text-orange-400">self</span>._on_name_changed)
+
+    <span class="text-blue-400">def</span> <span class="text-cyan-400">_on_name_changed</span>(<span class="text-orange-400">self</span>, text):
+        <span class="text-slate-500">"""При вводе текста перезапускаем таймер"""</span>
+        <span class="text-orange-400">self</span>._name_timer.start(<span class="text-cyan-400">500</span>)  <span class="text-slate-500"># Ждём 500 мс</span>
+
+    <span class="text-blue-400">def</span> <span class="text-cyan-400">_emit_name_changed</span>(<span class="text-orange-400">self</span>):
+        <span class="text-slate-500">"""Отправляем изменение только после паузы пользователя"""</span>
+        <span class="text-orange-400">self</span>.name_changed.emit(<span class="text-orange-400">self</span>.current_card_id, <span class="text-orange-400">self</span>.name_edit.text())
+
+    <span class="text-blue-400">def</span> <span class="text-cyan-400">load_card</span>(<span class="text-orange-400">self</span>, card_id, name, attributes, methods):
+        <span class="text-slate-500">"""Загружаем данные выбранной карточки"""</span>
+        <span class="text-orange-400">self</span>.current_card_id = card_id
+        <span class="text-orange-400">self</span>.name_edit.setText(name)
+        <span class="text-orange-400">self</span>.attrs_list.clear()
+        <span class="text-orange-400">self</span>.attrs_list.addItems(attributes)
+        <span class="text-orange-400">self</span>.methods_list.clear()
+        <span class="text-orange-400">self</span>.methods_list.addItems(methods)</pre>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<script>
+  let debounceTimeout = null;
+
+  function triggerSimDebounce(val) {
+    const indicator = document.getElementById('debounce-indicator');
+    const badge = document.getElementById('terminal-pulse');
+
+    // Включаем "ожидание" (красный цвет таймера)
+    indicator.className = "absolute right-2 top-2.5 w-2 h-2 rounded-full bg-red-500 animate-pulse";
+    badge.classList.add('opacity-0');
+
+    // Сбрасываем старый JS-таймер (эмуляция QTimer.start(500))
+    clearTimeout(debounceTimeout);
+
+    debounceTimeout = setTimeout(() => {
+      // Время вышло (сигнал отправлен)
+      indicator.className = "absolute right-2 top-2.5 w-2 h-2 rounded-full bg-green-500";
+
+      // Показываем плашку в нашей виртуальной IDE, что сигнал улетел в контроллер
+      badge.classList.remove('opacity-0');
+      badge.textContent = `emit name_changed -> "${val}"`;
+
+      // Прячем плашку через 1.5 секунды
+      setTimeout(() => { badge.classList.add('opacity-0'); }, 1500);
+    }, 500);
+  }
+
+  function addSimItem(type) {
+    const listId = type === 'attr' ? 'sim-attrs-list' : 'sim-methods-list';
+    const container = document.getElementById(listId);
+    const badge = document.getElementById('terminal-pulse');
+
+    const promptText = type === 'attr' ? 'Новое свойство (например, +age: int)' : 'Новый метод (например, +clear(): void)';
+    const defaultVal = type === 'attr' ? '+ value: float' : '+ update(): bool';
+
+    const userVal = prompt(promptText, defaultVal);
+    if (userVal) {
+      const newItem = document.createElement('div');
+      newItem.className = "px-1.5 py-1 bg-[#F3EEFF] text-[#7C3AED] rounded text-[10px] truncate";
+      newItem.textContent = userVal;
+      container.appendChild(newItem);
+
+      // Мгновенная отправка сигнала (без дебаунса, как для списков в коде)
+      badge.classList.remove('opacity-0');
+      badge.textContent = `emit ${type}s_changed`;
+      setTimeout(() => { badge.classList.add('opacity-0'); }, 1500);
+    }
+  }
+
+  function removeSimItem(type) {
+    const listId = type === 'attr' ? 'sim-attrs-list' : 'sim-methods-list';
+    const container = document.getElementById(listId);
+    const badge = document.getElementById('terminal-pulse');
+
+    if (container.lastElementChild) {
+      container.removeChild(container.lastElementChild);
+
+      badge.classList.remove('opacity-0');
+      badge.textContent = `emit ${type}s_changed (item removed)`;
+      setTimeout(() => { badge.classList.add('opacity-0'); }, 1500);
+    }
+  }
+</script>
+
+<section id="pydantic-core" class="py-24 bg-[#FAFAFE] border-t border-[#E5E0F8] relative">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <div class="text-center max-w-3xl mx-auto space-y-3 mb-16">
+      <span class="text-sm font-bold font-mono text-[#7C3AED] uppercase tracking-wider bg-[#F3EEFF] px-4 py-1.5 rounded-full border border-[#D4C9F8]">
+        Core Engine / Performance & Validation
+      </span>
+      <h2 class="text-3xl sm:text-4xl font-bold text-[#1F1F1F]">Ядро типизации, валидации и управления состоянием</h2>
+      <p class="text-base text-[#6B7280]">Строгие схемы данных Pydantic V2 в связке с высокопроизводительным потокобезопасным менеджером истории изменений</p>
+    </div>
+
+    <div class="grid lg:grid-cols-12 gap-8 items-stretch">
+
+      <div class="lg:col-span-5 flex flex-col justify-between space-y-4">
+
+        <div class="space-y-4">
+          <button onclick="switchCoreModel(1)" id="core-btn-1" class="core-tab-btn w-full text-left p-5 rounded-xl border-2 border-[#7C3AED] bg-white shadow-sm transition-all duration-200">
+            <div class="flex items-center space-x-3 mb-2">
+              <div class="w-2 h-2 rounded-full bg-[#7C3AED] core-dot"></div>
+              <h4 class="font-bold text-[#1F1F1F] text-base font-mono">class UMLNode(BaseModel)</h4>
+            </div>
+            <p class="text-sm text-[#6B7280] leading-relaxed">Сущность графа (класс/интерфейс). Содержит координаты `(x, y)`, коллекции атрибутов, методов, литералов перечислений и метаданные абстракции.</p>
+          </button>
+
+          <button onclick="switchCoreModel(2)" id="core-btn-2" class="core-tab-btn w-full text-left p-5 rounded-xl border border-[#E5E0F8] bg-white hover:bg-[#FAFAFE] transition-all duration-200">
+            <div class="flex items-center space-x-3 mb-2">
+              <div class="w-2 h-2 rounded-full bg-gray-300 core-dot"></div>
+              <h4 class="font-bold text-[#1F1F1F] text-base font-mono">class UMLConnection(BaseModel)</h4>
+            </div>
+            <p class="text-sm text-[#6B7280] leading-relaxed">Ребро графа связей. Задает `source_id` и `target_id`, тип объектной связи (от ассоциации до реализации), якорные точки привязки и кратность.</p>
+          </button>
+
+          <button onclick="switchCoreModel(3)" id="core-btn-3" class="core-tab-btn w-full text-left p-5 rounded-xl border border-[#E5E0F8] bg-white hover:bg-[#FAFAFE] transition-all duration-200">
+            <div class="flex items-center space-x-3 mb-2">
+              <div class="w-2 h-2 rounded-full bg-gray-300 core-dot"></div>
+              <h4 class="font-bold text-[#1F1F1F] text-base font-mono">HistoryService.push_state()</h4>
+            </div>
+            <p class="text-sm text-[#6B7280] leading-relaxed">Потокобезопасная атомарная запись слепков. Отсекает микродвижения мыши (&lt; 0.5px), чистит ветку Redo при ветвлении и контролирует переполнение ОЗУ.</p>
+          </button>
+        </div>
+
+        <div class="p-5 bg-white rounded-xl border border-[#E5E0F8] space-y-3 shadow-inner">
+          <div class="flex items-center space-x-2 text-[#7C3AED]">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            <span class="text-xs font-bold font-mono uppercase tracking-wider">Engine Architectural Features</span>
+          </div>
+          <ul class="space-y-1.5 text-xs text-[#6B7280] list-disc list-inside">
+            <li>Мьютексы блокировки (`with self._lock`) исключают гонку потоков GUI и воркеров</li>
+            <li>Глубокое клонирование `model_copy(deep=True)` вынесено за пределы лока</li>
+            <li>Автоматический прунинг (срезание) неактуальных веток истории Redo</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="lg:col-span-7 bg-[#151515] rounded-xl border border-slate-800 shadow-xl overflow-hidden flex flex-col h-[540px]">
+
+        <div class="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800 text-white select-none">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#EF4444]"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-[#F59E0B]"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-[#10B981]"></span>
+            <span id="core-ide-title" class="text-xs text-slate-400 font-mono pl-2">models/diagram.py</span>
+          </div>
+          <div id="core-ide-badge" class="text-xs font-mono text-slate-500">Pydantic v2 Schema</div>
+        </div>
+
+        <div class="relative flex-grow p-6 font-mono text-xs overflow-y-auto text-slate-300 leading-relaxed bg-[#151515]">
+
+          <div id="core-code-1" class="core-code-pane absolute inset-0 p-6 transition-all duration-300 opacity-100 scale-100 z-10 bg-[#151515]">
+            <pre class="text-slate-300 text-[11px] sm:text-xs selection:bg-[#7C3AED]/30"><span class="text-blue-400">class</span> <span class="text-yellow-400">UMLNode</span>(<span class="text-green-400">BaseModel</span>):
+    id: <span class="text-cyan-400">str</span> = <span class="text-blue-400">Field</span>(default_factory=<span class="text-blue-400">lambda</span>: <span class="text-cyan-400">str</span>(uuid4()))
+    name: <span class="text-cyan-400">str</span>
+    x: <span class="text-cyan-400">float</span>
+    y: <span class="text-cyan-400">float</span>
+    properties: <span class="text-green-400">List</span>[<span class="text-yellow-400">UMLProperty</span>] = <span class="text-blue-400">Field</span>(default_factory=<span class="text-cyan-400">list</span>)
+    methods: <span class="text-green-400">List</span>[<span class="text-yellow-400">UMLMethod</span>] = <span class="text-blue-400">Field</span>(default_factory=<span class="text-cyan-400">list</span>)
+    is_abstract: <span class="text-cyan-400">bool</span> = <span class="text-orange-400">False</span>
+    stereotype: <span class="text-green-400">Optional</span>[<span class="text-cyan-400">str</span>] = <span class="text-orange-400">None</span>
+    node_type: <span class="text-yellow-400">NodeType</span> = <span class="text-yellow-400">NodeType</span>.CLASS
+    enum_literals: <span class="text-green-400">List</span>[<span class="text-yellow-400">UMLEnumLiteral</span>] = <span class="text-blue-400">Field</span>(default_factory=<span class="text-cyan-400">list</span>)</pre>
+          </div>
+
+          <div id="core-code-2" class="core-code-pane absolute inset-0 p-6 transition-all duration-300 opacity-0 scale-95 pointer-events-none bg-[#151515]">
+            <pre class="text-slate-300 text-[11px] sm:text-xs selection:bg-[#7C3AED]/30"><span class="text-blue-400">class</span> <span class="text-yellow-400">ConnectionType</span>(<span class="text-cyan-400">str</span>, <span class="text-green-400">Enum</span>):
+    association = <span class="text-green-400">"association"</span>
+    inheritance = <span class="text-green-400">"inheritance"</span>
+    composition = <span class="text-green-400">"composition"</span>
+    aggregation = <span class="text-green-400">"aggregation"</span>
+    dependency = <span class="text-green-400">"dependency"</span>
+    interaction = <span class="text-green-400">"interaction"</span>
+    realization = <span class="text-green-400">"realization"</span>
+    uc_association = <span class="text-green-400">"uc_association"</span>
+    uc_include = <span class="text-green-400">"uc_include"</span>
+    uc_extend = <span class="text-green-400">"uc_extend"</span>
+
+
+<span class="text-blue-400">class</span> <span class="text-yellow-400">UMLConnection</span>(<span class="text-green-400">BaseModel</span>):
+    id: <span class="text-cyan-400">str</span> = <span class="text-blue-400">Field</span>(default_factory=<span class="text-blue-400">lambda</span>: <span class="text-cyan-400">str</span>(uuid4()))
+    source_id: <span class="text-cyan-400">str</span>
+    target_id: <span class="text-cyan-400">str</span>
+    type: <span class="text-yellow-400">ConnectionType</span> = <span class="text-yellow-400">ConnectionType</span>.association
+    source_anchor: <span class="text-cyan-400">str</span> = <span class="text-green-400">"right"</span>
+    target_anchor: <span class="text-cyan-400">str</span> = <span class="text-green-400">"left"</span>
+    multiplicity: <span class="text-green-400">Optional</span>[<span class="text-cyan-400">str</span>] = <span class="text-orange-400">None</span>
+    name: <span class="text-green-400">Optional</span>[<span class="text-cyan-400">str</span>] = <span class="text-orange-400">None</span></pre>
+          </div>
+
+          <div id="core-code-3" class="core-code-pane absolute inset-0 p-6 transition-all duration-300 opacity-0 scale-95 pointer-events-none bg-[#151515] overflow-y-auto">
+            <pre class="text-slate-300 text-[11px] sm:text-xs selection:bg-[#7C3AED]/30"><span class="text-blue-400">def</span> <span class="text-cyan-400">push_state</span>(<span class="text-orange-400">self</span>, state: <span class="text-green-400">Union</span>[<span class="text-yellow-400">UMLDiagram</span>, <span class="text-cyan-400">dict</span>]) -> <span class="text-orange-400">None</span>:
+    <span class="text-slate-500">"""Добавляет новое состояние в историю (с фильтрацией микрокликов)"""</span>
+    <span class="text-blue-400">if</span> <span class="text-orange-400">self</span>._is_restoring:
+        <span class="text-blue-400">return</span>
+
+    <span class="text-blue-400">if</span> <span class="text-cyan-400">isinstance</span>(state, <span class="text-cyan-400">dict</span>):
+        <span class="text-blue-400">try</span>:
+            state = <span class="text-yellow-400">UMLDiagram</span>.model_validate(state)
+        <span class="text-blue-400">except</span> <span class="text-green-400">Exception</span> <span class="text-blue-400">as</span> e:
+            logger.error(f<span class="text-green-400">"History: Validation error: {e}"</span>)
+            <span class="text-blue-400">return</span>
+
+    <span class="text-slate-500"># 1. Проверка на дубликат или микро-сдвиг (Deadzone)</span>
+    is_dup, reason = <span class="text-orange-400">self</span>._check_duplicate(state)
+    <span class="text-blue-400">if</span> is_dup:
+        <span class="text-blue-400">return</span>
+
+    <span class="text-slate-500"># 2. Создание глубокой копии вне лока (Оптимизация FPS)</span>
+    new_snapshot = state.model_copy(deep=<span class="text-orange-400">True</span>)
+
+    <span class="text-slate-500"># 3. Атомарная потокобезопасная запись</span>
+    <span class="text-blue-400">with</span> <span class="text-orange-400">self</span>._lock:
+        <span class="text-blue-400">if</span> <span class="text-orange-400">self</span>._current_index &lt; <span class="text-cyan-400">len</span>(<span class="text-orange-400">self</span>._stack) - <span class="text-cyan-400">1</span>:
+            <span class="text-orange-400">self</span>._stack = <span class="text-orange-400">self</span>._stack[:<span class="text-orange-400">self</span>._current_index + <span class="text-cyan-400">1</span>]
+
+        <span class="text-orange-400">self</span>._stack.append(new_snapshot)
+        <span class="text-orange-400">self</span>._current_index += <span class="text-cyan-400">1</span>
+
+        <span class="text-blue-400">if</span> <span class="text-cyan-400">len</span>(<span class="text-orange-400">self</span>._stack) &gt; <span class="text-orange-400">self</span>._max_history:
+            <span class="text-orange-400">self</span>._stack.pop(<span class="text-cyan-400">0</span>)
+            <span class="text-orange-400">self</span>._current_index -= <span class="text-cyan-400">1</span>
+
+    <span class="text-orange-400">self</span>._emit_status()</pre>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<script>
+  function switchCoreModel(tabNumber) {
+    const totalTabs = 3;
+    const buttons = document.querySelectorAll('.core-tab-btn');
+
+    const ideMeta = {
+      1: { title: 'models/diagram.py', badge: 'Pydantic Schema' },
+      2: { title: 'models/diagram.py', badge: 'Enum & Relations' },
+      3: { title: 'services/history_service.py', badge: 'State Engine' }
+    };
+
+    // Сброс всех кнопок
+    buttons.forEach(btn => {
+      btn.classList.remove('border-[#7C3AED]', 'shadow-sm', 'border-2');
+      btn.classList.add('border-[#E5E0F8]');
+
+      const dot = btn.querySelector('.core-dot');
+      if (dot) {
+        dot.className = "w-2 h-2 rounded-full bg-gray-300 core-dot";
+      }
+    });
+
+    // Активация выбранной кнопки
+    const activeBtn = document.getElementById(`core-btn-${tabNumber}`);
+    activeBtn.classList.remove('border-[#E5E0F8]');
+    activeBtn.classList.add('border-[#7C3AED]', 'shadow-sm', 'border-2');
+
+    const activeDot = activeBtn.querySelector('.core-dot');
+    if (activeDot) {
+      activeDot.className = "w-2 h-2 rounded-full bg-[#7C3AED] core-dot";
+    }
+
+    // Переключение отображаемого блока кода с анимацией
+    for (let i = 1; i <= totalTabs; i++) {
+      const pane = document.getElementById(`core-code-${i}`);
+      if (i === tabNumber) {
+        pane.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
+        pane.classList.add('opacity-100', 'scale-100', 'z-10');
+      } else {
+        pane.classList.remove('opacity-100', 'scale-100', 'z-10');
+        pane.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
+      }
+    }
+
+    // Изменение текстовых метаданных виртуальной IDE
+    document.getElementById('core-ide-title').textContent = ideMeta[tabNumber].title;
+    document.getElementById('core-ide-badge').textContent = ideMeta[tabNumber].badge;
+  }
+</script>
+
+<section id="codegen-engine" class="relative h-[300vh] bg-[#FAFAFE] border-t border-[#E5E0F8]">
+
+  <div class="sticky top-0 h-screen flex flex-col justify-between overflow-hidden py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-grow flex flex-col justify-center">
+
+      <div class="text-center max-w-3xl mx-auto space-y-3 mb-12">
+        <span class="text-sm font-bold font-mono text-[#7C3AED] uppercase tracking-wider bg-[#F3EEFF] px-4 py-1.5 rounded-full border border-[#D4C9F8]">
+          Services / CodeGenerator
+        </span>
+        <h2 class="text-3xl sm:text-4xl font-bold text-[#1F1F1F]">Механизм трансляции UML в исходный код</h2>
+        <p class="text-base text-[#6B7280]">Техническое обоснование автоматизации кодогенерации на основе метаданных модели</p>
+      </div>
+
+      <div class="grid lg:grid-cols-12 gap-8 items-stretch h-[55vh]">
+
+        <div class="lg:col-span-5 flex flex-col justify-center space-y-4 relative z-10">
+
+          <div data-step="1" class="step-card p-5 bg-white rounded-xl border border-[#7C3AED] shadow-sm transition-all duration-300 opacity-100 scale-100">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-sm font-bold text-[#1F1F1F] font-mono uppercase">01. Экспорт и анализ</h4>
+              <span class="text-xs font-mono font-bold px-2 py-0.5 bg-[#F3EEFF] text-[#7C3AED] rounded border border-[#D4C9F8]">JSON Graph</span>
+            </div>
+            <p class="text-sm text-[#6B7280] leading-relaxed">Сериализация графа диаграммы из <code class="text-xs bg-[#FAFAFE] px-1 rounded border">UMLDiagram</code> в структурированные метаданные. Метод <code class="text-xs bg-[#FAFAFE] px-1 rounded border">_build_inheritance_map</code> строит карту наследования классов.</p>
+          </div>
+
+          <div data-step="2" class="step-card p-5 bg-white rounded-xl border border-[#E5E0F8] opacity-40 transition-all duration-300 scale-95">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-sm font-bold text-[#1F1F1F] font-mono uppercase">02. Маппинг полиморфных типов</h4>
+              <span class="text-xs font-mono font-bold px-2 py-0.5 bg-blue-50 text-blue-600 rounded border border-blue-100">Type Mapping</span>
+            </div>
+            <p class="text-sm text-[#6B7280] leading-relaxed">Компонент <code class="text-xs bg-[#FAFAFE] px-1 rounded border">LANGUAGE_CONFIGS</code> подменяет абстрактные сущности (string, list) на строгие примитивы конкретных целевых платформ.</p>
+          </div>
+
+          <div data-step="3" class="step-card p-5 bg-white rounded-xl border border-[#E5E0F8] opacity-40 transition-all duration-300 scale-95">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-sm font-bold text-[#1F1F1F] font-mono uppercase">03. Рендеринг Jinja2</h4>
+              <span class="text-xs font-mono font-bold px-2 py-0.5 bg-green-50 text-green-600 rounded border border-green-100">Jinja2 Engine</span>
+            </div>
+            <p class="text-sm text-[#6B7280] leading-relaxed">Слияние очищенных метаданных со строгими файлами шаблонов (<code class="text-xs bg-[#FAFAFE] px-1 rounded border">python_class.j2</code> / <code class="text-xs bg-[#FAFAFE] px-1 rounded border">java_class.j2</code>) и выгрузка готовых файлов.</p>
+          </div>
+
+        </div>
+
+        <div class="lg:col-span-7 relative bg-white rounded-xl border border-[#E5E0F8] shadow-lg overflow-hidden flex flex-col h-full">
+
+          <div class="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800 text-white z-20">
+            <div class="flex items-center space-x-2">
+              <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+              <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
+              <span class="w-3 h-3 rounded-full bg-green-500/80"></span>
+              <span id="editor-title" class="text-xs text-slate-400 font-mono pl-2 transition-all duration-200">UML Metadata Input</span>
+            </div>
+            <div class="text-xs font-mono">
+              <span id="editor-badge" class="px-2.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 transition-all duration-200">diagram.json</span>
+            </div>
+          </div>
+
+          <div class="relative flex-grow bg-[#151515] p-5 font-mono text-xs overflow-y-auto text-slate-300 leading-relaxed">
+
+            <div id="visual-content-1" class="visual-pane absolute inset-0 p-5 transition-all duration-500 opacity-100 scale-100 z-10 bg-[#151515] overflow-y-auto space-y-5">
+              <div>
+                <div class="text-slate-500 mb-2">// Сериализованный граф модели (UMLDiagram)</div>
+                <pre class="text-blue-400"><span class="text-yellow-400">{</span>
+  <span class="text-purple-400">"diagram_name"</span>: <span class="text-green-400">"LogicCraft_Core"</span>,
+  <span class="text-purple-400">"nodes"</span>: <span class="text-yellow-400">[</span>
+    <span class="text-indigo-400">{</span>
+      <span class="text-purple-400">"id"</span>: <span class="text-green-400">"n1"</span>,
+      <span class="text-purple-400">"name"</span>: <span class="text-green-400">"CodeGenerator"</span>,
+      <span class="text-purple-400">"node_type"</span>: <span class="text-green-400">"class"</span>,
+      <span class="text-purple-400">"properties"</span>: <span class="text-pink-400">[</span>
+        <span class="text-yellow-400">{"name": "language", "type": "string", "visibility": "private"}</span>
+      <span class="text-pink-400">]</span>
+    <span class="text-indigo-400">}</span>
+  <span class="text-yellow-400">]</span>
+<span class="text-yellow-400">}</span></pre>
+              </div>
+
+              <div class="border-t border-slate-800 pt-4">
+                <div class="text-slate-500 mb-2">// Построение карты наследования для генерации корректной структуры ООП</div>
+                <pre class="text-slate-300 font-mono text-[11px] leading-5"><span class="text-blue-400">def</span> <span class="text-yellow-400">_build_inheritance_map</span>(<span class="text-orange-400">self</span>, diagram: UMLDiagram) -> Dict[str, List[str]]:
+    inheritance_map = {}
+    <span class="text-purple-400">for</span> node <span class="text-purple-400">in</span> diagram.nodes:
+        inheritance_map[node.name] = []
+
+    <span class="text-purple-400">if</span> <span class="text-cyan-400">hasattr</span>(diagram, <span class="text-green-400">'connections'</span>):
+        <span class="text-purple-400">for</span> connection <span class="text-purple-400">in</span> diagram.connections:
+            <span class="text-purple-400">if</span> connection.type.value == <span class="text-green-400">"inheritance"</span>:
+                source_node = <span class="text-cyan-400">next</span>((n <span class="text-purple-400">for</span> n in diagram.nodes <span class="text-purple-400">if</span> n.id == connection.source_id), <span class="text-blue-500">None</span>)
+                target_node = <span class="text-cyan-400">next</span>((n <span class="text-purple-400">for</span> n in diagram.nodes <span class="text-purple-400">if</span> n.id == connection.target_id), <span class="text-blue-500">None</span>)
+                <span class="text-purple-400">if</span> source_node <span class="text-purple-400">and</span> target_node:
+                    inheritance_map[source_node.name].append(target_node.name)
+
+    <span class="text-purple-400">return</span> inheritance_map</pre>
+              </div>
+            </div>
+
+            <div id="visual-content-2" class="visual-pane absolute inset-0 p-5 transition-all duration-500 opacity-0 scale-95 pointer-events-none bg-white flex flex-col justify-center">
+              <div class="overflow-hidden border border-[#E5E0F8] rounded-lg text-sm font-mono text-[#1F1F1F]">
+                <table class="min-w-full divide-y divide-[#E5E0F8]">
+                  <thead class="bg-[#F8F6FF]">
+                  <tr>
+                    <th class="px-4 py-2.5 text-left font-bold text-[#7C3AED]">UML Type</th>
+                    <th class="px-4 py-2.5 text-left font-semibold text-[#1F1F1F]">Python</th>
+                    <th class="px-4 py-2.5 text-left font-semibold text-[#1F1F1F]">Java</th>
+                  </tr>
+                  </thead>
+                  <tbody class="divide-y divide-[#E5E0F8] bg-white">
+                  <tr><td class="px-4 py-2 font-bold">string</td><td class="px-4 py-2 text-blue-600">str</td><td class="px-4 py-2 text-orange-600">String</td></tr>
+                  <tr class="bg-[#FAFAFE]"><td class="px-4 py-2 font-bold">integer</td><td class="px-4 py-2 text-blue-600">int</td><td class="px-4 py-2 text-orange-600">int</td></tr>
+                  <tr><td class="px-4 py-2 font-bold">list</td><td class="px-4 py-2 text-blue-600">List</td><td class="px-4 py-2 text-orange-600">List&lt;Obj&gt;</td></tr>
+                  <tr class="bg-[#FAFAFE]"><td class="px-4 py-2 font-bold">dict</td><td class="px-4 py-2 text-blue-600">Dict</td><td class="px-4 py-2 text-orange-600">Map&lt;S,O&gt;</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="mt-4 p-3 bg-[#F8F6FF] rounded border border-[#D4C9F8] text-xs text-[#7C3AED] leading-normal">
+                <strong>Инкапсуляция:</strong> <code class="bg-white px-1 rounded">private</code> превращается в <code class="bg-white px-1 rounded">__</code> в Python и в модификатор <code class="bg-white px-1 rounded">private</code> в Java.
+              </div>
+            </div>
+
+            <div id="visual-content-3" class="visual-pane absolute inset-0 p-5 transition-all duration-500 opacity-0 scale-95 pointer-events-none bg-[#151515] overflow-y-auto">
+              <div class="text-slate-500 mb-2">// Выдержка из ядра генерации исходного кода LogicCraft</div>
+              <pre class="text-slate-300 font-mono text-[11px] leading-relaxed select-all">
+<span class="text-green-600">"""Generated from UML Diagram: &#123;&#123; diagram_name | trim &#125;&#125;"""</span>
+<span class="text-blue-400">from</span> typing <span class="text-blue-400">import</span> List, Optional, Dict, Any
+
+<span class="text-purple-400">&#123;% for</span> node <span class="text-purple-400">in</span> nodes <span class="text-purple-400">%&#125;</span>
+    class <span class="text-yellow-400">&#123;&#123; node.name | trim &#125;&#125;</span>:
+    <span class="text-green-600">"""Class generated from UML diagram"""</span>
+    <span class="text-purple-400">&#123;% if</span> node.properties <span class="text-purple-400">%&#125;</span>
+
+        <span class="text-slate-500"># Attributes</span>
+        <span class="text-purple-400">&#123;% for</span> prop <span class="text-purple-400">in</span> node.properties <span class="text-purple-400">%&#125;</span>
+            _&#123;&#123; prop.name | trim &#125;&#125;: &#123;&#123; prop.type | trim &#125;&#125;
+        <span class="text-purple-400">&#123;% endfor %&#125;</span>
+    <span class="text-purple-400">&#123;% endif %&#125;</span>
+
+    <span class="text-blue-400">def</span> <span class="text-cyan-400">__init__</span>(<span class="text-orange-400">self</span>):
+    <span class="text-purple-400">&#123;% if</span> node.properties <span class="text-purple-400">%&#125;</span>
+        <span class="text-purple-400">&#123;% for</span> prop <span class="text-purple-400">in</span> node.properties <span class="text-purple-400">%&#125;</span>
+            <span class="text-orange-400">self</span>._&#123;&#123; prop.name | trim &#125;&#125; = <span class="text-blue-500">None</span>
+        <span class="text-purple-400">&#123;% endfor %&#125;</span>
+    <span class="text-purple-400">&#123;% else %&#125;</span>
+        <span class="text-blue-400">pass</span>
+    <span class="text-purple-400">&#123;% endif %&#125;</span>
+    <span class="text-purple-400">&#123;% if</span> node.methods <span class="text-purple-400">%&#125;</span>
+
+        <span class="text-slate-500"># Methods</span>
+        <span class="text-purple-400">&#123;% for</span> method <span class="text-purple-400">in</span> node.methods <span class="text-purple-400">%&#125;</span>
+            <span class="text-purple-400">&#123;% set</span> rtype = (method.return_type | trim) if method.return_type else "None" <span class="text-purple-400">%&#125;</span>
+            <span class="text-blue-400">def</span> <span class="text-cyan-400">&#123;&#123; method.name | trim &#125;&#125;</span>(<span class="text-orange-400">self</span><span class="text-purple-400">&#123;% if</span> method.parameters <span class="text-purple-400">%&#125;</span>, &#123;&#123 generate_method_params(method) &#125;&#125;<span class="text-purple-400">&#123;% endif %&#125;</span>) -> &#123;&#123 rtype &#125;&#125;:
+            <span class="text-blue-400">pass</span>
+        <span class="text-purple-400">&#123;% endfor %&#125;</span>
+    <span class="text-purple-400">&#123;% endif %&#125;</span>
+
+<span class="text-purple-400">&#123;% endfor %&#125;</span></pre>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="absolute inset-x-0 top-0 h-full pointer-events-none flex flex-col justify-between">
+    <div id="trigger-1" class="h-[33vh]"></div>
+    <div id="trigger-2" class="h-[33vh]"></div>
+    <div id="trigger-3" class="h-[34vh]"></div>
+  </div>
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const steps = document.querySelectorAll('.step-card');
+    const title = document.getElementById('editor-title');
+    const badge = document.getElementById('editor-badge');
+
+    const statesData = {
+      1: { title: 'UML Metadata Input', badge: 'diagram.json' },
+      2: { title: 'Type Poly-Morphing Engine', badge: 'config.py' },
+      3: { title: 'Jinja2 Template Rendering', badge: 'python_class.j2' }
+    };
+
+    const updateActiveStep = (stepNumber) => {
+      steps.forEach(step => {
+        if (step.getAttribute('data-step') == stepNumber) {
+          step.classList.remove('opacity-40', 'scale-95', 'border-[#E5E0F8]');
+          step.classList.add('opacity-100', 'scale-100', 'border-[#7C3AED]', 'shadow-sm');
+        } else {
+          step.classList.remove('opacity-100', 'scale-100', 'border-[#7C3AED]', 'shadow-sm');
+          step.classList.add('opacity-40', 'scale-95', 'border-[#E5E0F8]');
+        }
+      });
+
+      for(let i = 1; i <= 3; i++) {
+        const pane = document.getElementById(`visual-content-${i}`);
+        if(i === parseInt(stepNumber)) {
+          pane.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
+          pane.classList.add('opacity-100', 'scale-100');
+        } else {
+          pane.classList.remove('opacity-100', 'scale-100');
+          pane.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
+        }
+      }
+
+      if (statesData[stepNumber]) {
+        title.textContent = statesData[stepNumber].title;
+        badge.textContent = statesData[stepNumber].badge;
+      }
+    };
+
+    const observerOptions = {
+      root: null,
+      rootMargin: '-30% 0px -40% 0px',
+      threshold: 0
+    };
+
+    for (let i = 1; i <= 3; i++) {
+      const trigger = document.getElementById(`trigger-${i}`);
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            updateActiveStep(i);
+          }
+        });
+      }, observerOptions);
+      if (trigger) observer.observe(trigger);
+    }
+  });
+</script>
+
+<section id="architecture" class="py-24 bg-white border-t border-[#E5E0F8] relative">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <div class="text-center max-w-3xl mx-auto space-y-3 mb-16">
+      <span class="text-sm font-bold font-mono text-[#7C3AED] uppercase tracking-wider bg-[#F3EEFF] px-4 py-1.5 rounded-full border border-[#D4C9F8]">
+        System Architecture / MVC
+      </span>
+      <h2 class="text-3xl sm:text-4xl font-bold text-[#1F1F1F]">Строгая архитектура на базе PyQt6 & MVC</h2>
+      <p class="text-base text-[#6B7280]">Технический разбор модулей десктопного приложения, реактивных потоков данных и оптимизаций памяти</p>
+    </div>
+
+    <div class="grid lg:grid-cols-12 gap-8 items-start">
+
+      <div class="lg:col-span-5 space-y-4">
+
+        <button onclick="switchArchStep(1)" id="arch-btn-1" class="arch-tab-btn w-full text-left p-5 rounded-xl border-2 border-[#7C3AED] bg-[#F8F6FF] shadow-sm transition-all duration-200">
+          <div class="flex items-center space-x-3 mb-2">
+            <span class="w-6 h-6 rounded-md bg-[#7C3AED] text-white flex items-center justify-center font-mono text-xs font-bold">01</span>
+            <h4 class="font-bold text-[#1F1F1F] text-base">Многослойная структура (Layers)</h4>
+          </div>
+          <p class="text-sm text-[#6B7280] pl-9 leading-relaxed">Декомпозиция LogicCraft на четыре независимых слоя: View (PyQt6 графэлементы), Controller, Service и Pydantic Model слой.</p>
+        </button>
+
+        <button onclick="switchArchStep(2)" id="arch-btn-2" class="arch-tab-btn w-full text-left p-5 rounded-xl border border-[#E5E0F8] bg-white hover:bg-[#FAFAFE] transition-all duration-200">
+          <div class="flex items-center space-x-3 mb-2">
+            <span class="w-6 h-6 rounded-md bg-[#E5E0F8] text-[#1F1F1F] arch-step-num flex items-center justify-center font-mono text-xs font-bold">02</span>
+            <h4 class="font-bold text-[#1F1F1F] text-base">Поток данных: Создание элемента</h4>
+          </div>
+          <p class="text-sm text-[#6B7280] pl-9 leading-relaxed">Жизненный цикл клика по панели Toolbox. Трансляция QT-сигнала через Контроллер в Менеджер и отрисовка `UMLCard` на сцене.</p>
+        </button>
+
+        <button onclick="switchArchStep(3)" id="arch-btn-3" class="arch-tab-btn w-full text-left p-5 rounded-xl border border-[#E5E0F8] bg-white hover:bg-[#FAFAFE] transition-all duration-200">
+          <div class="flex items-center space-x-3 mb-2">
+            <span class="w-6 h-6 rounded-md bg-[#E5E0F8] text-[#1F1F1F] arch-step-num flex items-center justify-center font-mono text-xs font-bold">03</span>
+            <h4 class="font-bold text-[#1F1F1F] text-base">HistoryService & Оптимизации</h4>
+          </div>
+          <p class="text-sm text-[#6B7280] pl-9 leading-relaxed">Как движок сохраняет историю изменений без просадки FPS. Скорость рендеринга и дедупликация состояний при перемещении карт.</p>
+        </button>
+
+        <button onclick="switchArchStep(4)" id="arch-btn-4" class="arch-tab-btn w-full text-left p-5 rounded-xl border border-[#E5E0F8] bg-white hover:bg-[#FAFAFE] transition-all duration-200">
+          <div class="flex items-center space-x-3 mb-2">
+            <span class="w-6 h-6 rounded-md bg-[#E5E0F8] text-[#1F1F1F] arch-step-num flex items-center justify-center font-mono text-xs font-bold">04</span>
+            <h4 class="font-bold text-[#1F1F1F] text-base">Темизация: QSS & theme.py</h4>
+          </div>
+          <p class="text-sm text-[#6B7280] pl-9 leading-relaxed">Разделение стилей: Qt Style Sheets (`style.qss`) для UI-виджетов и жесткие Python-токены цвета (`theme.py`) для сцены Canvas.</p>
+        </button>
+
+      </div>
+
+      <div class="lg:col-span-7 bg-[#1F1F1F] rounded-xl border border-slate-800 shadow-xl overflow-hidden flex flex-col h-[520px]">
+
+        <div class="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800 text-white">
+          <div class="flex items-center space-x-2">
+            <span class="w-3 h-3 rounded-full bg-red-500/80"></span>
+            <span class="w-3 h-3 rounded-full bg-yellow-500/80"></span>
+            <span class="w-3 h-3 rounded-full bg-green-500/80"></span>
+            <span id="arch-ide-title" class="text-xs text-slate-400 font-mono pl-2">architecture_map.txt</span>
+          </div>
+          <div class="text-xs font-mono">
+            <span id="arch-ide-badge" class="px-2.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">MVC Spec</span>
+          </div>
+        </div>
+
+        <div class="relative flex-grow p-6 font-mono text-xs overflow-y-auto leading-relaxed bg-[#151515] text-slate-300">
+
+          <div id="arch-content-1" class="arch-pane absolute inset-0 p-6 transition-all duration-300 opacity-100 scale-100 z-10 bg-[#151515]">
+            <div class="text-slate-500 mb-3">// Четыре архитектурных слоя LogicCraft Core</div>
+            <pre class="text-slate-300 text-[11px] leading-tight font-bold">
+<span class="text-purple-400">┌─────────────────────────────────────────────────────┐</span>
+<span class="text-purple-400">│                  View Layer (PyQt6)                 │</span>
+<span class="text-purple-400">│</span>  MainWindow · DiagramView · DiagramScene            <span class="text-purple-400">│</span>
+<span class="text-purple-400">│</span>  UMLCard · ConnectionLine · ArrowHead · AnchorPoint  <span class="text-purple-400">│</span>
+<span class="text-purple-400">├─────────────────────────────────────────────────────┤</span>
+<span class="text-blue-400">│                Controller Layer                     │</span>
+<span class="text-blue-400">│</span>  DiagramController (Управление сигналами и слотами)  <span class="text-blue-400">│</span>
+<span class="text-blue-400">├─────────────────────────────────────────────────────┤</span>
+<span class="text-yellow-400">│                 Service Layer                       │</span>
+<span class="text-yellow-400">│</span>  HistoryService · CodeGenerator · ProjectExporter   <span class="text-yellow-400">│</span>
+<span class="text-yellow-400">│</span>  SerializationService · GeometryService             <span class="text-yellow-400">│</span>
+<span class="text-yellow-400">├─────────────────────────────────────────────────────┤</span>
+<span class="text-green-400">│             Model Layer (Pydantic Core)             │</span>
+<span class="text-green-400">│</span>  UMLDiagram · UMLNode · UMLConnection · UMLProperty  <span class="text-green-400">│</span>
+<span class="text-green-400">└─────────────────────────────────────────────────────┘</span></pre>
+            <div class="mt-4 text-[11px] text-slate-400 border-l-2 border-[#7C3AED] pl-3">
+              Слой представлений полностью изолирован от сырых данных. Изменения на холсте транслируются строго через контроллер.
+            </div>
+          </div>
+
+          <div id="arch-content-2" class="arch-pane absolute inset-0 p-6 transition-all duration-300 opacity-0 scale-95 pointer-events-none bg-[#151515]">
+            <div class="text-slate-500 mb-2">// Логическая трассировка реактивного потока данных:</div>
+            <div class="space-y-1.5 text-[11px]">
+              <div><span class="text-red-400">1. Click</span> ToolboxPanel Button (Класс/Интерфейс)</div>
+              <div><span class="text-purple-400">2. Emit</span> <code class="bg-slate-800 px-1 rounded text-pink-400">MainWindow.add_card_requested(x, y, node_type)</code></div>
+              <div><span class="text-blue-400">3. Catch</span> <code class="bg-slate-800 px-1 rounded text-blue-300">DiagramController.add_card()</code></div>
+              <div><span class="text-yellow-400">4. Mutate</span> <code class="bg-slate-800 px-1 rounded text-yellow-300">DiagramManager.add_node(x, y)</code> внутри Core Model</div>
+              <div><span class="text-emerald-400">5. State</span> <code class="bg-slate-800 px-1 rounded text-emerald-400">HistoryService.push_state(diagram)</code> для Undo/Redo</div>
+              <div><span class="text-purple-400">6. Emit</span> <code class="bg-slate-800 px-1 rounded text-pink-400">DiagramController.card_added(node)</code></div>
+              <div><span class="text-green-400">7. Render</span> Инициализация и отрисовка графического элемента <code class="text-green-300">UMLCard</code></div>
+              <div><span class="text-blue-400">8. Append</span> <code class="bg-slate-800 px-1 rounded text-blue-300">DiagramScene.addItem(card)</code> с привязкой к сетке</div>
+            </div>
+          </div>
+
+          <div id="arch-content-3" class="arch-pane absolute inset-0 p-6 transition-all duration-300 opacity-0 scale-95 pointer-events-none bg-[#151515] flex flex-col justify-center">
+            <div class="text-slate-500 mb-3">// Результаты стресс-тестирования паттернов HistoryService</div>
+            <div class="border border-slate-800 rounded-lg overflow-hidden text-[11px]">
+              <div class="grid grid-cols-3 bg-slate-900 p-2.5 font-bold text-slate-300 border-b border-slate-800">
+                <div>Механизм</div>
+                <div>Принцип работы</div>
+                <div class="text-right text-[#10B981]">Результат</div>
+              </div>
+              <div class="grid grid-cols-3 p-2.5 border-b border-slate-800/60 bg-slate-900/20">
+                <div class="text-purple-400 font-bold">model_copy()</div>
+                <div class="text-slate-400">Поверхностное копирование Pydantic</div>
+                <div class="text-right text-[#10B981] font-bold">+30-50% к скорости</div>
+              </div>
+              <div class="grid grid-cols-3 p-2.5 border-b border-slate-800/60">
+                <div class="text-purple-400 font-bold">Дедупликация</div>
+                <div class="text-slate-400">Игнорирование промежуточных Drag-событий</div>
+                <div class="text-right text-[#10B981] font-bold">-94% избыточных стейтов</div>
+              </div>
+              <div class="grid grid-cols-3 p-2.5 border-b border-slate-800/60 bg-slate-900/20">
+                <div class="text-purple-400 font-bold">Сжатие ОЗУ</div>
+                <div class="text-slate-400">Сериализация старых срезов в JSON-строки</div>
+                <div class="text-right text-[#10B981] font-bold">-60% потребления памяти</div>
+              </div>
+            </div>
+            <div class="mt-3 text-[10px] text-slate-500 leading-normal">
+              * Оптимизация дедупликации позволяет приложению сохранять абсолютную отзывчивость (smooth 60fps canvas) даже при одновременном перетаскивании групп из 50+ UML-сущностей.
+            </div>
+          </div>
+
+          <div id="arch-content-4" class="arch-pane absolute inset-0 p-6 transition-all duration-300 opacity-0 scale-95 pointer-events-none bg-[#151515]">
+            <div class="text-slate-500 mb-2">// 1. Константы отрисовки сцены (view/theme.py)</div>
+            <pre class="text-cyan-400 text-[11px] mb-4">
+<span class="text-blue-400">class</span> <span class="text-yellow-400">CardStyle</span>:
+    HEADER_BG = <span class="text-green-400">"#7C3AED"</span>   <span class="text-slate-500"># Главный фиолетовый акцент заголовка</span>
+    TEXT_COLOR = <span class="text-green-400">"#1F1F1F"</span>  <span class="text-slate-500"># Основной темный текст</span>
+
+<span class="text-blue-400">class</span> <span class="text-yellow-400">SceneStyle</span>:
+    BACKGROUND = <span class="text-green-400">"#F0EFFE"</span> <span class="text-slate-500"># Фон холста графической сцены</span></pre>
+
+            <div class="text-slate-500 mb-2">// 2. Глобальные каскадные стили окон (style.qss)</div>
+            <pre class="text-pink-400 text-[11px]">
+<span class="text-yellow-400">#ToolboxButton</span> {
+    <span class="text-purple-400">background-color</span>: transparent;
+    <span class="text-purple-400">border-radius</span>: <span class="text-orange-400">8px</span>;
+}
+<span class="text-yellow-400">#PropertiesInput:focus</span> {
+    <span class="text-purple-400">border</span>: <span class="text-orange-400">1px</span> solid <span class="text-green-400">#7C3AED</span>;
+}</pre>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+
+<script>
+  function switchArchStep(stepNumber) {
+    const totalSteps = 4;
+    const btns = document.querySelectorAll('.arch-tab-btn');
+    const ides = {
+      1: { title: 'architecture_map.txt', badge: 'MVC Spec' },
+      2: { title: 'diagram_controller.py [DataPipeline]', badge: 'PyQt6 Signals' },
+      3: { title: 'history_service.py [Stress Test]', badge: 'Performance' },
+      4: { title: 'theme.py / style.qss', badge: 'Styles Token' }
+    };
+
+    // 1. Сбрасываем и активируем кнопки слева
+    btns.forEach(btn => {
+      btn.classList.remove('border-[#7C3AED]', 'bg-[#F8F6FF]', 'shadow-sm', 'border-2');
+      btn.classList.add('border-[#E5E0F8]', 'bg-white');
+
+      const numBadge = btn.querySelector('.arch-step-num');
+      if (numBadge) {
+        numBadge.classList.remove('bg-[#7C3AED]', 'text-white');
+        numBadge.classList.add('bg-[#E5E0F8]', 'text-[#1F1F1F]');
+      }
+    });
+
+    const activeBtn = document.getElementById(`arch-btn-${stepNumber}`);
+    activeBtn.classList.remove('border-[#E5E0F8]', 'bg-white');
+    activeBtn.classList.add('border-[#7C3AED]', 'bg-[#F8F6FF]', 'shadow-sm', 'border-2');
+
+    const activeNum = activeBtn.querySelector('.arch-step-num');
+    if (activeNum) {
+      activeNum.classList.remove('bg-[#E5E0F8]', 'text-[#1F1F1F]');
+      activeNum.classList.add('bg-[#7C3AED]', 'text-white');
+    }
+
+    // 2. Переключаем экраны кода справа
+    for (let i = 1; i <= totalSteps; i++) {
+      const pane = document.getElementById(`arch-content-${i}`);
+      if (i === stepNumber) {
+        pane.classList.remove('opacity-0', 'scale-95', 'pointer-events-none');
+        pane.classList.add('opacity-100', 'scale-100', 'z-10');
+      } else {
+        pane.classList.remove('opacity-100', 'scale-100', 'z-10');
+        pane.classList.add('opacity-0', 'scale-95', 'pointer-events-none');
+      }
+    }
+
+    // 3. Меняем заголовки псевдо-IDE панели
+    document.getElementById('arch-ide-title').textContent = ides[stepNumber].title;
+    document.getElementById('arch-ide-badge').textContent = ides[stepNumber].badge;
+  }
+</script>
+
+<section id="architecture" class="py-20 bg-white border-t border-[#E5E0F8]">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+    <div class="mt-12 bg-[#F8F6FF] border border-[#D4C9F8] p-8 rounded-xl">
+      <h4 class="text-center text-sm font-mono text-[#7C3AED] uppercase tracking-wider font-bold mb-5">Реализованный технологический стек</h4>
+      <div class="flex flex-wrap justify-center gap-4 text-sm font-mono font-semibold">
+        <span class="px-4 py-2 bg-white rounded-lg border border-[#D4C9F8] text-[#1F1F1F]">Python 3.x</span>
+        <span class="px-4 py-2 bg-white rounded-lg border border-[#D4C9F8] text-[#7C3AED]">PyQt6 (GUI Engine)</span>
+        <span class="px-4 py-2 bg-white rounded-lg border border-[#D4C9F8] text-[#7C3AED]">Pydantic (Validation)</span>
+        <span class="px-4 py-2 bg-white rounded-lg border border-[#D4C9F8] text-[#7C3AED]">Jinja2 (Templates Engine)</span>
+        <span class="px-4 py-2 bg-white rounded-lg border border-[#D4C9F8] text-[#1F1F1F]">Pytest / PyInstaller</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section id="team" class="py-20 border-t border-[#E5E0F8]">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center max-w-3xl mx-auto space-y-3 mb-16">
+      <h2 class="text-4xl font-bold text-[#1F1F1F]">Проектная группа</h2>
+      <p class="text-base text-[#6B7280]">Распределение обязанностей по разработке архитектурных слоев</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-8">
+      <div class="bg-white border-2 border-[#E5E0F8] rounded-2xl p-8 flex flex-col justify-between shadow-sm hover:border-[#C4B5FD] transition">
+        <div class="space-y-4">
+          <div class="w-14 h-14 bg-[#F3EEFF] text-[#7C3AED] border border-[#D4C9F8] rounded-xl flex items-center justify-center font-bold font-mono text-xl">АВ</div>
+          <div>
+            <h3 class="text-xl font-bold text-[#1F1F1F]">Важенин А. Р.</h3>
+            <p class="text-sm font-mono text-[#7C3AED] font-bold">Техник-программист</p>
+          </div>
+          <p class="text-sm text-[#6B7280] leading-relaxed">
+            Главный архитектор системы. Проектирование сквозного взаимодействия компонентов MVC, реализация класса `DiagramController`, связывание сигналов и слотов, а также управление точкой входа приложения.
+          </p>
+        </div>
+        <div class="mt-8 pt-4 border-t border-[#E5E0F8] text-sm font-mono text-[#9B72F5] font-bold tracking-wide">
+          Core Architecture / Controller Layer
+        </div>
+      </div>
+
+      <div class="bg-white border-2 border-[#E5E0F8] rounded-2xl p-8 flex flex-col justify-between shadow-sm hover:border-[#C4B5FD] transition">
+        <div class="space-y-4">
+          <div class="w-14 h-14 bg-[#F3EEFF] text-[#7C3AED] border border-[#D4C9F8] rounded-xl flex items-center justify-center font-bold font-mono text-xl">СБ</div>
+          <div>
+            <h3 class="text-xl font-bold text-[#1F1F1F]">Болясников С. Д.</h3>
+            <p class="text-sm font-mono text-[#7C3AED] font-bold">Инженер-программист</p>
+          </div>
+          <p class="text-sm text-[#6B7280] leading-relaxed">
+            Разработка слоя моделей (`Model Layer`) на базе Pydantic. Создание механизмов сериализации структуры в JSON файлы, написание транслятора кода на Jinja2 и алгоритмов проверки графа на циклы.
+          </p>
+        </div>
+        <div class="mt-8 pt-4 border-t border-[#E5E0F8] text-sm font-mono text-[#9B72F5] font-bold tracking-wide">
+          Model Layer / CodeGen Service
+        </div>
+      </div>
+
+      <div class="bg-white border-2 border-[#E5E0F8] rounded-2xl p-8 flex flex-col justify-between shadow-sm hover:border-[#C4B5FD] transition">
+        <div class="space-y-4">
+          <div class="w-14 h-14 bg-[#F3EEFF] text-[#7C3AED] border border-[#D4C9F8] rounded-xl flex items-center justify-center font-bold font-mono text-xl">ДБ</div>
+          <div>
+            <h3 class="text-xl font-bold text-[#1F1F1F]">Беспрозванных Д. С.</h3>
+            <p class="text-sm font-mono text-[#7C3AED] font-bold">Специалист по UX/UI</p>
+          </div>
+          <p class="text-sm text-[#6B7280] leading-relaxed">
+            Проектирование и реализация слоя представления (`View Layer`). Создание интерактивного холста `DiagramScene`, кастомных карточек `UMLCard`, геометрии связей `ConnectionLine` и боковой панели свойств.
+          </p>
+        </div>
+        <div class="mt-8 pt-4 border-t border-[#E5E0F8] text-sm font-mono text-[#9B72F5] font-bold tracking-wide">
+          View Layer / Graphics UI Engine
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="border-t border-[#E5E0F8] bg-white py-10 text-center text-sm font-mono text-[#6B7280]">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-2">
+    <div class="font-bold text-[#1F1F1F] text-base">Программный комплекс LogicCraft © 2026</div>
+    <div>Омский Государственный Педагогический Университет (ОмГПУ)</div>
+  </div>
+</footer>
+
+</body>
+</html>
