@@ -1,18 +1,21 @@
 name: Deploy LogicCraft Site
 
+# Скрипт запускается автоматически при каждом `git push` в ветку main
 on:
   push:
     branches:
-      - main  # Скрипт сработает, когда ты сделаешь git push в ветку main
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Скачиваем актуальный код из репозитория GitHub на виртуальную машину воркера
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # 2. Безопасно копируем файлы проекта на твой VPS-сервер через SSH
       - name: Copy files to Server
         uses: appleboy/scp-action@master
         with:
@@ -22,6 +25,7 @@ jobs:
           source: "./*"
           target: "/root/logiccraft/"
 
+      # 3. Подключаемся к серверу по SSH, правим права на файлы и перезапускаем Docker
       - name: Execute remote SSH commands to deploy
         uses: appleboy/ssh-action@master
         with:
@@ -31,14 +35,22 @@ jobs:
           script: |
             cd /root/logiccraft
             
-            # Автоматически выставляем права на чтение для EXE (чтобы не было ошибки "недоступен")
+            # Настройка прав доступа внутри папки проекта перед сборкой Docker-образа
             if [ -d "html" ]; then
+              # Выставляем права 755 на саму папку (чтение и выполнение для всех)
               chmod -R 755 html/
+            
+              # Гарантируем права 644 (чтение для всех) для всех .exe и .pdf файлов
               find html/ -type f -name "*.exe" -exec chmod 644 {} \;
+              find html/ -type f -name "*.pdf" -exec chmod 644 {} \;
             fi
             
-            # Перезапускаем Docker-контейнер
+            # Останавливаем и удаляем старую версию контейнера, если она существует
             docker stop logiccraft-app || true
             docker rm logiccraft-app || true
+            
+            # Собираем чистый Docker-образ без использования старого кэша
             docker build --no-cache -t logiccraft-site .
+            
+            # Запускаем обновленный контейнер в фоновом режиме с автоперезапуском при сбоях
             docker run -d -p 80:80 --name logiccraft-app --restart always logiccraft-site
